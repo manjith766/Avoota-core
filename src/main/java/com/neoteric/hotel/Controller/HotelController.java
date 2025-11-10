@@ -16,16 +16,10 @@ public class HotelController {
 
     private final HotelService hotelService;
 
-    // Add new hotel (throws exception if hotel already exists)
+    // Add new or update hotel
     @PostMapping("/add")
     public ApiResponse<String> addHotel(@RequestBody Hotel hotel) {
-        return hotelService.addHotel(hotel);
-    }
-
-    //  Update hotel details + address
-    @PutMapping("/update")
-    public ApiResponse<String> updateHotel(@RequestBody Hotel hotel) {
-        return hotelService.updateHotel(hotel);
+        return hotelService.saveOrUpdateHotel(hotel);
     }
 
     // Get all hotels

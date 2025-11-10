@@ -15,6 +15,7 @@ public enum AvootaResponseStatus {
         GENERIC_ERROR("AVE100", "Something went wrong, please try again."),
         INVALID_INPUT("AVE101", "Invalid input provided."),
         DB_ERROR("AVE102", "Database operation failed."),
+        DUPLICATE_ENTRY("AVE105","Duplicate entry "),
         UNAUTHORIZED("AVE103", "Unauthorized access."),
         SERVICE_UNAVAILABLE("AVE104", "Service temporarily unavailable."),
 
@@ -22,6 +23,7 @@ public enum AvootaResponseStatus {
         LOCATION_NOT_FOUND("AVE200", "No hotels found for given location."),
         HOTEL_NOT_FOUND("AVE201", "Hotel not found."),
         NO_RESULTS_FOUND("AVE202", "No matching hotels found."),
+
 
         // 🔹 Room Details
         ROOM_NOT_FOUND("AVE300", "Room not found."),

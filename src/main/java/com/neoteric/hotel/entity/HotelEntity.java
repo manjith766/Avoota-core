@@ -16,7 +16,7 @@ public class HotelEntity {
     private Long id;
     @Column(name = "hotel_id", unique = true, nullable = false)
     private String hotelId;
-    @Column(name = "hotelName",unique = true, nullable = false)
+    @Column(name = "hotelName", nullable = false)
     private String hotelName;
     @Column(name = "status")
     private String status;

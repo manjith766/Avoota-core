@@ -9,7 +9,9 @@ import com.neoteric.hotel.entity.HotelEntity;
 import com.neoteric.hotel.model.Address;
 import com.neoteric.hotel.model.Hotel;
 import com.neoteric.hotel.repository.HotelRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -27,101 +29,90 @@ public class HotelService {
         this.hotelRepository = hotelRepository;
     }
 
-    public ApiResponse<String> addHotel(Hotel hotel) {
-        log.info("saving new hotel with hotel ID ={}", hotel.getHotelId());
-        try {
-            Optional<HotelEntity> existing = hotelRepository.findByHotelId(hotel.getHotelId());
-            if (existing.isPresent()) {
-                log.warn("Hotel already exists with hotelId={}", hotel.getHotelId());
-                throw new CustomException(
-                        AvootaResponseStatus.FailureCode.HOTEL_NOT_FOUND,
-                        "Hotel already exists with hotelId: " + hotel.getHotelId());
-            }
-            HotelEntity newHotel = new HotelEntity();
-            newHotel.setHotelId(hotel.getHotelId());
-            newHotel.setHotelName(hotel.getHotelName());
-            newHotel.setStatus(hotel.getStatus());
 
-            List<AddressEntity> addressEntities = new ArrayList<>();
-            if (hotel.getAddresses() != null) {
-                for (Address addr : hotel.getAddresses()) {
-                    AddressEntity addressEntity = new AddressEntity();
-                    addressEntity.setStreet(addr.getStreet());
-                    addressEntity.setCity(addr.getStreet());
-                    addressEntity.setState(addr.getState());
-                    addressEntity.setCountry(addr.getCountry());
-                    addressEntity.setPinCode(addr.getPinCode());
-                    addressEntity.setHotel(newHotel);
-                    addressEntities.add(addressEntity);
-                }
-            }
-            newHotel.setAddresses(addressEntities);
-            hotelRepository.save(newHotel);
-            log.info("Hotel created successfully with hotelId={}", hotel.getHotelId());
-            return ApiResponse.<String>builder()
-                    .status(SUCCESS)
-                    .failureCode(AvootaResponseStatus.FailureCode.NONE.getCode())
-                    .failureMessage("Hotel created successfully.")
-                    .data("Hotel created with ID: " + hotel.getHotelId())
-                    .build();
-        } catch (CustomException ce) {
-            throw ce;
-        } catch (Exception ex) {
-            log.error("Error while creating hotel with hotelId={}", hotel.getHotelId(), ex);
-            return AvootaUtil.failure(
-                    AvootaResponseStatus.FailureCode.DB_ERROR, "Error occurred while creating hotel."
-            );
-        }
-    }
+    @Transactional
+    public ApiResponse<String> saveOrUpdateHotel(Hotel hotel) {
+        log.info("Save/Update hotel initiated for hotelId={}", hotel.getHotelId());
 
-    public ApiResponse<String> updateHotel(Hotel hotel) {
-        log.info("Updating hotel details for hotelId={}", hotel.getHotelId());
         try {
-            Optional<HotelEntity> existing = hotelRepository.findByHotelId(hotel.getHotelId());
-            if (existing.isEmpty()) {
-                log.warn("Hotel not found for hotelId={}", hotel.getHotelId());
-                throw new CustomException(
-                        AvootaResponseStatus.FailureCode.HOTEL_NOT_FOUND, "Hotel not found with hotelId={}" + hotel.getHotelId()
+            //  Validate input
+            if (hotel.getHotelId() == null || hotel.getHotelId().isEmpty()) {
+                return AvootaUtil.failure(
+                        AvootaResponseStatus.FailureCode.INVALID_INPUT,
+                        "Hotel ID is required."
                 );
             }
-            HotelEntity updateHotel = existing.get();
-            updateHotel.setHotelName(hotel.getHotelName());
-            updateHotel.setStatus(hotel.getStatus());
 
-            List<AddressEntity> updatedAddresses = new ArrayList<>();
-            if (hotel.getAddresses() != null) {
+            Optional<HotelEntity> existingOpt = hotelRepository.findByHotelId(hotel.getHotelId());
+            HotelEntity targetHotel = existingOpt.orElseGet(() -> {
+                log.info("Creating new hotel with hotelId={}", hotel.getHotelId());
+                HotelEntity newHotel = new HotelEntity();
+                newHotel.setHotelId(hotel.getHotelId());
+                newHotel.setAddresses(new ArrayList<>());
+                return newHotel;
+            });
+
+            //  Partial field updates
+            if (hotel.getHotelName() != null) targetHotel.setHotelName(hotel.getHotelName());
+            if (hotel.getStatus() != null) targetHotel.setStatus(hotel.getStatus());
+
+            // Handle address updates/creates
+            if (hotel.getAddresses() != null && !hotel.getAddresses().isEmpty()) {
                 for (Address addr : hotel.getAddresses()) {
-                    AddressEntity addressEntity = new AddressEntity();
-                    addressEntity.setStreet(addr.getStreet());
-                    addressEntity.setCity(addr.getCity());
-                    addressEntity.setState(addr.getState());
-                    addressEntity.setCountry(addr.getCountry());
-                    addressEntity.setPinCode(addr.getPinCode());
-                    addressEntity.setHotel(updateHotel);
-                    updatedAddresses.add(addressEntity);
+                    AddressEntity existingAddr = targetHotel.getAddresses().stream()
+                            .filter(a -> a.getCity().equalsIgnoreCase(addr.getCity())
+                                    && a.getPinCode().equalsIgnoreCase(addr.getPinCode()))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (existingAddr != null) {
+                        // Partial update
+                        if (addr.getStreet() != null) existingAddr.setStreet(addr.getStreet());
+                        if (addr.getState() != null) existingAddr.setState(addr.getState());
+                        if (addr.getCountry() != null) existingAddr.setCountry(addr.getCountry());
+                    } else {
+                        // Add new address
+                        AddressEntity newAddr = new AddressEntity();
+                        newAddr.setStreet(addr.getStreet());
+                        newAddr.setCity(addr.getCity());
+                        newAddr.setState(addr.getState());
+                        newAddr.setCountry(addr.getCountry());
+                        newAddr.setPinCode(addr.getPinCode());
+                        newAddr.setHotel(targetHotel);
+                        targetHotel.getAddresses().add(newAddr);
+                    }
                 }
             }
-            updateHotel.getAddresses().clear();
-            updateHotel.getAddresses().addAll(updatedAddresses);
 
-            hotelRepository.save(updateHotel);
-            log.info("Hotel updated with hotelId={}", hotel.getHotelId());
+            //  Save or update
+            hotelRepository.save(targetHotel);
+
+            String action = existingOpt.isPresent() ? "updated" : "created";
+            log.info("Hotel {} successfully with hotelId={}", action, hotel.getHotelId());
+
             return ApiResponse.<String>builder()
                     .status(SUCCESS)
                     .failureCode(AvootaResponseStatus.FailureCode.NONE.getCode())
-                    .failureMessage("Hotel updated successfully")
-                    .data("Hotel updated with ID: " + hotel.getHotelId())
+                    .failureMessage("Hotel " + action + " successfully.")
+                    .data("Hotel " + action + " with ID: " + hotel.getHotelId())
                     .build();
-        } catch (CustomException ce) {
-            throw ce;
-        } catch (Exception ex) {
-            log.error("Error while updating hotel with hotelId={}", hotel.getHotelId());
+
+        } catch (DataIntegrityViolationException e) {
+            log.error("Duplicate hotel name detected: {}", hotel.getHotelName());
             return AvootaUtil.failure(
-                    AvootaResponseStatus.FailureCode.DB_ERROR, "Error occurred while updating hotel"
+                    AvootaResponseStatus.FailureCode.DUPLICATE_ENTRY,
+                    "Hotel name already exists: " + hotel.getHotelName()
+            );
+        } catch (Exception ex) {
+            log.error("Error during save/update of hotelId={}", hotel.getHotelId(), ex);
+            return AvootaUtil.failure(
+                    AvootaResponseStatus.FailureCode.DB_ERROR,
+                    "Error occurred while saving/updating hotel."
             );
         }
-
     }
+
+
 
     public ApiResponse<List<HotelEntity>> getAllHotels() {
         log.info("Fetching all hotels");
