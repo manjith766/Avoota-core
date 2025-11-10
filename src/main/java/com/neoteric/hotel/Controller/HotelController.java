@@ -1,5 +1,6 @@
 package com.neoteric.hotel.Controller;
 
+import com.neoteric.hotel.entity.AddressEntity;
 import com.neoteric.hotel.entity.HotelEntity;
 import com.neoteric.hotel.exception.ApiResponse;
 import com.neoteric.hotel.model.Hotel;
@@ -37,4 +38,11 @@ public class HotelController {
         log.info("Searching hotels with keyword: {}", keyword);
         return ResponseEntity.ok(ApiResponse.success("Search results", hotelService.searchHotels(keyword)));
     }
+    @GetMapping("/{hotelId}/address")
+    public ResponseEntity<ApiResponse<AddressEntity>> getAddressByHotelId(@PathVariable String hotelId) {
+        log.info("Fetching address for hotelId: {}", hotelId);
+        AddressEntity address = hotelService.getAddressByHotelId(hotelId);
+        return ResponseEntity.ok(ApiResponse.success("Address fetched successfully", address));
+    }
+
 }

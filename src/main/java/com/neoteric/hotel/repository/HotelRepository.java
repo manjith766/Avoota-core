@@ -1,5 +1,6 @@
 package com.neoteric.hotel.repository;
 
+import com.neoteric.hotel.entity.AddressEntity;
 import com.neoteric.hotel.entity.HotelEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,5 +12,6 @@ public interface HotelRepository extends JpaRepository<HotelEntity, Long> {
     @Query("SELECT h FROM HotelEntity h WHERE LOWER(h.hotelName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(h.address.city) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(h.address.state) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<HotelEntity>searchHotels(@Param("keyword") String keyword);
+    List<HotelEntity> searchHotels(@Param("keyword") String keyword);
+
 }
