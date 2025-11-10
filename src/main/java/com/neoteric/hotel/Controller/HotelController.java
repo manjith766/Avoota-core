@@ -1,48 +1,44 @@
 package com.neoteric.hotel.Controller;
 
-import com.neoteric.hotel.entity.AddressEntity;
+import com.neoteric.common.ui.ApiResponse;
 import com.neoteric.hotel.entity.HotelEntity;
-import com.neoteric.hotel.exception.ApiResponse;
 import com.neoteric.hotel.model.Hotel;
 import com.neoteric.hotel.service.HotelService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
-@Slf4j
 @RestController
-@RequestMapping("/hotels")
+@RequestMapping("/api/hotels")
+@RequiredArgsConstructor
 public class HotelController {
-     private final HotelService hotelService;
 
-    public HotelController(HotelService hotelService) {
-        this.hotelService = hotelService;
-    }
-    @PostMapping
-    public ResponseEntity<ApiResponse<HotelEntity>> addHotel(@RequestBody Hotel hotel) {
-        log.info("Received hotel creation request: {}", hotel.getHotelName());
-        HotelEntity created = hotelService.addHotel(hotel);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Hotel created successfully", created));
+    private final HotelService hotelService;
+
+    // Add new hotel (throws exception if hotel already exists)
+    @PostMapping("/add")
+    public ApiResponse<String> addHotel(@RequestBody Hotel hotel) {
+        return hotelService.addHotel(hotel);
     }
 
+    //  Update hotel details + address
+    @PutMapping("/update")
+    public ApiResponse<String> updateHotel(@RequestBody Hotel hotel) {
+        return hotelService.updateHotel(hotel);
+    }
+
+    // Get all hotels
     @GetMapping
-    public ResponseEntity<ApiResponse<List<HotelEntity>>> getAllHotels() {
-        log.info("Fetching all hotels");
-        return ResponseEntity.ok(ApiResponse.success("Hotels fetched", hotelService.getAllHotels()));
+    public ApiResponse<List<HotelEntity>> getAllHotels() {
+        return hotelService.getAllHotels();
     }
+
+    //  Search hotels by keyword (name, city, etc.)
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<HotelEntity>>> searchHotels(@RequestParam String keyword) {
-        log.info("Searching hotels with keyword: {}", keyword);
-        return ResponseEntity.ok(ApiResponse.success("Search results", hotelService.searchHotels(keyword)));
+    public ApiResponse<List<HotelEntity>> searchHotels(@RequestParam String keyword) {
+        return hotelService.searchHotels(keyword);
     }
-    @GetMapping("/{hotelId}/address")
-    public ResponseEntity<ApiResponse<AddressEntity>> getAddressByHotelId(@PathVariable String hotelId) {
-        log.info("Fetching address for hotelId: {}", hotelId);
-        AddressEntity address = hotelService.getAddressByHotelId(hotelId);
-        return ResponseEntity.ok(ApiResponse.success("Address fetched successfully", address));
-    }
+
 
 }

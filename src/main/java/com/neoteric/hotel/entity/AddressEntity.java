@@ -1,8 +1,12 @@
 package com.neoteric.hotel.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.neoteric.hotel.model.Hotel;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.Type;
+import org.springframework.context.annotation.Lazy;
 
 @Entity
 @Table(name = "addresses")
@@ -12,20 +16,18 @@ public class AddressEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // read-only mirror column (prevents duplicate mapping)
-    @Column(name = "hotel_id", insertable = false, updatable = false)
-    private String hotelId;
-
+    @Column(name = "street")
     private String street;
+    @Column(name = "city")
     private String city;
+    @Column(name = "state")
     private String state;
+    @Column(name = "country")
     private String country;
+    @Column(name = "pinCode")
     private String pinCode;
-
-    // The owning side of the relationship
-    @OneToOne
-    @JoinColumn(name = "hotel_id", referencedColumnName = "hotel_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hotel_fk_id")
     @JsonBackReference
     private HotelEntity hotel;
 }
