@@ -1,6 +1,4 @@
 package com.neoteric.hotel.service;
-
-import com.neoteric.common.exception.CustomException;
 import com.neoteric.common.ui.ApiResponse;
 import com.neoteric.common.ui.AvootaResponseStatus;
 import com.neoteric.common.ui.AvootaUtil;
@@ -13,11 +11,9 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import static com.neoteric.common.ui.AvootaResponseStatus.SUCCESS;
 
 @Slf4j
@@ -157,7 +153,7 @@ public class HotelService {
                 );
             }
 
-            // 🔹 Prevent infinite recursion in JSON serialization
+            //  Prevent infinite recursion in JSON serialization
             results.forEach(hotel -> {
                 if (hotel.getAddresses() != null) {
                     hotel.getAddresses().forEach(addr -> addr.setHotel(null));
@@ -179,5 +175,6 @@ public class HotelService {
             );
         }
     }
+
 
 }
